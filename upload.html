@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Selecionar Imagem de Perfil</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #111; color: #f5c518; text-align: center; }
+    input, button { font-size: 16px; margin-top: 10px; padding: 8px 12px; border-radius: 5px; border: none; }
+    #preview { margin-top: 20px; max-width: 200px; border-radius: 100px; display: none; }
+  </style>
+</head>
+<body>
+
+  <h2>🖼️ Escolha sua foto de perfil</h2>
+  <input type="file" id="media" accept="image/png, image/jpeg" required>
+  <br>
+  <img id="preview" src="">
+  <br>
+  <button id="confirmar" style="display:none;">Usar esta imagem</button>
+
+  <script>
+    const input = document.getElementById('media');
+    const preview = document.getElementById('preview');
+    const confirmar = document.getElementById('confirmar');
+
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (!file || !file.type.startsWith('image/')) {
+        alert('Por favor selecione uma imagem válida.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const base64 = e.target.result;
+        preview.src = base64;
+        preview.style.display = "block";
+        confirmar.style.display = "inline-block";
+
+        confirmar.onclick = () => {
+          localStorage.setItem("foto_matola", base64);
+          window.location.href = "http://127.0.0.1:8000/perfil.html"; // volta pro APK ou webview
+        };
+      };
+
+      reader.readAsDataURL(file);
+    });
+  </script>
+
+</body>
+</html>
+
