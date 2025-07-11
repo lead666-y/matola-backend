@@ -51,30 +51,10 @@
       background: #555 !important;
       cursor: wait;
     }
-    .neon-border {
-      border: 2px solid transparent;
-      border-radius: 15px;
-      background: 
-        linear-gradient(#111, #111) padding-box,
-        linear-gradient(45deg, #f5c518, #ff0077, #00fff7, #f5c518) border-box;
-      animation: border-glow 2s linear infinite;
-      background-size: 400% 400%;
-    }
-    @keyframes border-glow {
-      0% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-      100% {
-        background-position: 0% 50%;
-      }
-    }
   </style>
 </head>
 <body>
-  <div class="card neon-border">
+  <div class="card">
     <h2>Crie seu Perfil</h2>
 
     <img id="avatarPreview" src="img/avatar_padrao.png">
@@ -104,64 +84,73 @@
       return "MAT-" + Math.floor(100000 + Math.random() * 899999);
     }
 
-    function criarConta() {
-      const nome = document.getElementById("nomeUsuario").value.trim();
-      const foto = localStorage.getItem("foto_matola");
-      const button = document.getElementById("criarContaBtn");
-      const originalText = button.textContent;
+function criarConta() {
+  const nome = document.getElementById("nomeUsuario").value.trim();
+  const foto = localStorage.getItem("foto_matola");
+  const button = document.getElementById("criarContaBtn");
+  const originalText = button.textContent;
 
-      if (nome.length < 3) {
-        alert("Digite seu nome completo.");
-        return;
+  if (nome.length < 3) {
+    alert("Digite seu nome completo.");
+    return;
+  }
+
+  // ✅ CASO 1: Está no WebView ou sem foto, usa fluxo offline
+  if (isWebView() || !foto) {
+    const id = gerarIDMatola();
+    localStorage.setItem("nome_matola", nome);
+    localStorage.setItem("id_matola", id);
+    localStorage.removeItem("anonimo_matola");
+
+    document.getElementById("resumo_id").textContent = `✅ ID virtual criado: ${id} ${nome}`;
+
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 500);
+    return;
+  }
+
+  // ✅ CASO 2: Fluxo completo com imagem (navegador)
+  button.textContent = "Criando...";
+  button.disabled = true;
+  button.classList.add("loading-btn");
+
+  compressImage(foto).then(compressedFoto => {
+    const id = gerarIDMatola();
+
+    fetch(`${API_URL}/salvar_perfil`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome, id, foto: compressedFoto })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Erro de conexão com o servidor");
+      return res.json();
+    })
+    .then(data => {
+      if (data.status === "ok") {
+        localStorage.setItem("nome_matola", nome);
+        localStorage.setItem("id_matola", id);
+        localStorage.setItem("foto_matola", compressedFoto);
+        localStorage.removeItem("anonimo_matola");
+
+        document.getElementById("resumo_id").textContent =
+          `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
+
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1000);
+      } else {
+        throw new Error(data.message || "Erro ao criar perfil");
       }
-
-      if (!foto) {
-        alert("Você precisa escolher uma imagem de perfil antes.");
-        return;
-      }
-
-      button.textContent = "Criando...";
-      button.disabled = true;
-      button.classList.add("loading-btn");
-
-      // Comprimir a imagem antes de enviar
-      compressImage(foto).then(compressedFoto => {
-        const id = gerarIDMatola();
-        
-        fetch(`${API_URL}/salvar_perfil`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nome, id, foto: compressedFoto })
-        })
-        .then(res => {
-          if (!res.ok) throw new Error("Erro de conexão com o servidor");
-          return res.json();
-        })
-        .then(data => {
-          if (data.status === "ok") {
-            localStorage.setItem("nome_matola", nome);
-            localStorage.setItem("id_matola", id);
-            localStorage.setItem("foto_matola", compressedFoto);
-            localStorage.removeItem("anonimo_matola");
-
-            document.getElementById("resumo_id").textContent =
-              `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
-
-            // Redirecionamento universal para WebView/navegador
-            setTimeout(() => {
-              redirectToIndex();
-            }, 1000);
-          } else {
-            throw new Error(data.message || "Erro ao criar perfil");
-          }
-        })
-        .catch(err => {
-          alert(err.message || "Erro ao criar perfil");
-          button.textContent = originalText;
-          button.disabled = false;
-          button.classList.remove("loading-btn");
-        });
-      });
+    })
+    .catch(err => {
+      alert(err.message || "Erro ao criar perfil");
+      button.textContent = originalText;
+      button.disabled = false;
+      button.classList.remove("loading-btn");
+    });
+  });
     }
 
     // Função para comprimir imagem
@@ -205,7 +194,7 @@
       localStorage.setItem("id_matola", id);
       document.getElementById("resumo_id").textContent = `🕶️ ID anônimo criado: ${id}`;
       setTimeout(() => {
-        redirectToIndex();
+        window.location.href = "index.html";
       }, 1000);
     }
 
@@ -255,7 +244,17 @@
           statusEl.style.color = "green";
           
           setTimeout(() => {
-            redirectToIndex();
+            // Verificar se está em WebView (APK)
+            if (isWebView()) {
+              // Chamar função do Android para redirecionar
+              if (typeof Android !== 'undefined' && Android.redirectToIndex) {
+                Android.redirectToIndex();
+              } else {
+                window.location.href = "index.html";
+              }
+            } else {
+              window.location.href = "index.html";
+            }
           }, 1000);
         } else {
           throw new Error(data.message || "ID ou Nome inválido");
@@ -270,40 +269,11 @@
       });
     }
 
-    // Função universal de redirecionamento
-    function redirectToIndex() {
-      // Verificar se está em WebView (APK)
-      if (isWebView()) {
-        try {
-          // Tentar chamar a ponte Android
-          if (typeof Android !== 'undefined' && Android.redirectToIndex) {
-            Android.redirectToIndex();
-            return;
-          }
-          
-          // Tentar chamar a ponte iOS
-          if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.redirectHandler) {
-            window.webkit.messageHandlers.redirectHandler.postMessage("redirectToIndex");
-            return;
-          }
-        } catch (e) {
-          console.error("Erro na ponte nativa:", e);
-        }
-      }
-      
-      // Redirecionamento padrão para navegador
-      window.location.href = "index.html";
-    }
-
     // Verificar se está em WebView
     function isWebView() {
-      const userAgent = navigator.userAgent.toLowerCase();
-      return (
-        userAgent.includes('wv') || 
-        userAgent.includes('webview') || 
-        /(matola|android|apk)/i.test(userAgent)
-      );
+      return navigator.userAgent.includes('WebView') || 
+             /(Matola|Android|APK)/i.test(navigator.userAgent);
     }
   </script>
 </body>
-      </html>
+</html>
