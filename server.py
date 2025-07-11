@@ -1,28 +1,27 @@
-from flask import Flask, request, render_template, render_template_string, send_from_directory
-import os
-import json
+from flask import Flask, request, render_template, send_from_directory, render_template_string
+import os, json
 
 app = Flask(__name__)
 
-# Pastas
-UPLOAD_FOLDER = 'uploads'
-PERFIS_DB = 'db/perfis.json'
+# Diretório base
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Caminho real dos arquivos
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+PERFIS_JSON_PATH = os.path.join(BASE_DIR, 'db', 'perfis.json')
 ALLOWED_EXTENSIONS = {'mp4', 'png', 'jpg', 'jpeg'}
 
-# Cria pastas se não existirem
+# Garantir pastas
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs('db', exist_ok=True)
-
-# Cria JSON se não existir
-if not os.path.exists(PERFIS_DB):
-    with open(PERFIS_DB, 'w') as f:
+os.makedirs(os.path.join(BASE_DIR, 'db'), exist_ok=True)
+if not os.path.exists(PERFIS_JSON_PATH):
+    with open(PERFIS_JSON_PATH, 'w') as f:
         json.dump([], f)
 
-# Verifica extensão permitida
+# Função de validação
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Rota principal (teste simples)
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
@@ -30,7 +29,7 @@ def upload_file():
         if file and allowed_file(file.filename):
             filepath = os.path.join(UPLOAD_FOLDER, file.filename)
             file.save(filepath)
-            return f'<h3>✅ Arquivo salvo com sucesso: uploads/{file.filename}</h3><a href="/">← Voltar</a>'
+            return f'<h3>✅ Arquivo salvo: uploads/{file.filename}</h3><a href="/">← Voltar</a>'
         else:
             return '<h3>❌ Arquivo inválido</h3><a href="/">← Voltar</a>'
 
@@ -42,8 +41,6 @@ def upload_file():
         </form>
     """)
 
-# ========== API PERFIL ==========
-
 @app.route('/salvar_perfil', methods=['POST'])
 def salvar_perfil():
     data = request.json
@@ -51,20 +48,16 @@ def salvar_perfil():
     id_ = data.get('id')
     foto = data.get('foto')
 
-    try:
-        with open(PERFIS_DB, 'r') as f:
-            perfis = json.load(f)
-    except:
-        perfis = []
+    with open(PERFIS_JSON_PATH, 'r') as f:
+        perfis = json.load(f)
 
-    # Verifica duplicado
     for perfil in perfis:
         if perfil['id'] == id_:
             return {"status": "duplicado"}
 
     perfis.append({"nome": nome, "id": id_, "foto": foto})
 
-    with open(PERFIS_DB, 'w') as f:
+    with open(PERFIS_JSON_PATH, 'w') as f:
         json.dump(perfis, f)
 
     return {"status": "ok"}
@@ -74,11 +67,8 @@ def login_perfil():
     nome = request.args.get('nome')
     id_ = request.args.get('id')
 
-    try:
-        with open(PERFIS_DB, 'r') as f:
-            perfis = json.load(f)
-    except:
-        return {"status": "erro"}
+    with open(PERFIS_JSON_PATH, 'r') as f:
+        perfis = json.load(f)
 
     for perfil in perfis:
         if perfil['nome'] == nome and perfil['id'] == id_:
@@ -91,12 +81,10 @@ def login_perfil():
 
     return {"status": "erro"}
 
-# Arquivos de upload
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-# HTMLs
 @app.route('/upload.html')
 def upload_html():
     return render_template('upload.html')
@@ -109,6 +97,5 @@ def perfil_html():
 def index_html():
     return render_template('index.html')
 
-# ==========
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000)
