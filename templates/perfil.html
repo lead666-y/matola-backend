@@ -123,6 +123,11 @@
     }
 
     function criarConta() {
+  if (isWebView()) {
+    criarContaSimples();
+    return;
+  }
+      
       const nome = document.getElementById("nomeUsuario").value.trim();
       const foto = localStorage.getItem("foto_matola");
       const button = document.getElementById("criarContaBtn");
@@ -217,13 +222,18 @@
     }
 
     function continuarSemConta() {
-      const id = gerarIDMatola();
-      localStorage.setItem("anonimo_matola", "true");
-      localStorage.setItem("id_matola", id);
-      document.getElementById("resumo_id").textContent = `🕶️ ID anônimo criado: ${id}`;
-      setTimeout(() => {
-        window.location.href = "index.html";
-      }, 1000);
+  if (isWebView()) {
+    continuarSemContaSimples();
+    return;
+  }
+
+  const id = gerarIDMatola();
+  localStorage.setItem("anonimo_matola", "true");
+  localStorage.setItem("id_matola", id);
+  document.getElementById("resumo_id").textContent = `🕶️ ID anônimo criado: ${id}`;
+  setTimeout(() => {
+    window.location.href = "index.html";
+  }, 1000);
     }
 
     const imgPerfil = localStorage.getItem("foto_matola");
