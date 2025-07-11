@@ -84,73 +84,63 @@
       return "MAT-" + Math.floor(100000 + Math.random() * 899999);
     }
 
-function criarConta() {
-  const nome = document.getElementById("nomeUsuario").value.trim();
-  const foto = localStorage.getItem("foto_matola");
-  const button = document.getElementById("criarContaBtn");
-  const originalText = button.textContent;
+    function criarConta() {
+      const nome = document.getElementById("nomeUsuario").value.trim();
+      const foto = localStorage.getItem("foto_matola");
+      const button = document.getElementById("criarContaBtn");
+      const originalText = button.textContent;
 
-  if (nome.length < 3) {
-    alert("Digite seu nome completo.");
-    return;
-  }
-
-  // ✅ CASO 1: Está no WebView ou sem foto, usa fluxo offline
-  if (isWebView() || !foto) {
-    const id = gerarIDMatola();
-    localStorage.setItem("nome_matola", nome);
-    localStorage.setItem("id_matola", id);
-    localStorage.removeItem("anonimo_matola");
-
-    document.getElementById("resumo_id").textContent = `✅ ID virtual criado: ${id} ${nome}`;
-
-    setTimeout(() => {
-      window.location.href = "index.html";
-    }, 500);
-    return;
-  }
-
-  // ✅ CASO 2: Fluxo completo com imagem (navegador)
-  button.textContent = "Criando...";
-  button.disabled = true;
-  button.classList.add("loading-btn");
-
-  compressImage(foto).then(compressedFoto => {
-    const id = gerarIDMatola();
-
-    fetch(`${API_URL}/salvar_perfil`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, id, foto: compressedFoto })
-    })
-    .then(res => {
-      if (!res.ok) throw new Error("Erro de conexão com o servidor");
-      return res.json();
-    })
-    .then(data => {
-      if (data.status === "ok") {
-        localStorage.setItem("nome_matola", nome);
-        localStorage.setItem("id_matola", id);
-        localStorage.setItem("foto_matola", compressedFoto);
-        localStorage.removeItem("anonimo_matola");
-
-        document.getElementById("resumo_id").textContent =
-          `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
-
-        setTimeout(() => {
-          window.location.href = "index.html";
-        }, 1000);
-      } else {
-        throw new Error(data.message || "Erro ao criar perfil");
+      if (nome.length < 3) {
+        alert("Digite seu nome completo.");
+        return;
       }
-    })
-    .catch(err => {
-      alert(err.message || "Erro ao criar perfil");
-      button.textContent = originalText;
-      button.disabled = false;
-      button.classList.remove("loading-btn");
-    });
-  });
+
+      if (!foto) {
+        alert("Você precisa escolher uma imagem de perfil antes.");
+        return;
+      }
+
+      button.textContent = "Criando...";
+      button.disabled = true;
+      button.classList.add("loading-btn");
+
+      // Comprimir a imagem antes de enviar
+      compressImage(foto).then(compressedFoto => {
+        const id = gerarIDMatola();
+        
+        fetch(`${API_URL}/salvar_perfil`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome, id, foto: compressedFoto })
+        })
+        .then(res => {
+          if (!res.ok) throw new Error("Erro de conexão com o servidor");
+          return res.json();
+        })
+        .then(data => {
+          if (data.status === "ok") {
+            localStorage.setItem("nome_matola", nome);
+            localStorage.setItem("id_matola", id);
+            localStorage.setItem("foto_matola", compressedFoto);
+            localStorage.removeItem("anonimo_matola");
+
+            document.getElementById("resumo_id").textContent =
+              `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
+
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 1000);
+          } else {
+            throw new Error(data.message || "Erro ao criar perfil");
+          }
+        })
+        .catch(err => {
+          alert(err.message || "Erro ao criar perfil");
+          button.textContent = originalText;
+          button.disabled = false;
+          button.classList.remove("loading-btn");
+        });
+      });
     }
 
     // Função para comprimir imagem
@@ -276,4 +266,4 @@ function criarConta() {
     }
   </script>
 </body>
-</html>
+        </html>
