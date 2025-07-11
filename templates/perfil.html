@@ -53,6 +53,10 @@
       background: #555 !important;
       cursor: wait;
     }
+    .offline-btn {
+      background: #444;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
@@ -66,6 +70,7 @@
 
     <br>
     <button id="criarContaBtn" onclick="criarConta()">Criar Perfil</button>
+    <button id="criarOfflineBtn" onclick="criarContaOffline()">Criar conta sem sair do aplicativo</button>
     <button onclick="continuarSemConta()">Continuar sem perfil</button>
     <button onclick="abrirLogin()">Fazer login</button>
     <p id="resumo_id"></p>
@@ -193,6 +198,36 @@
       });
     }
 
+    function criarContaOffline() {
+      const nome = document.getElementById("nomeUsuario").value.trim();
+      
+      if (nome.length < 3) {
+        alert("Digite seu nome completo para criar a conta offline.");
+        return;
+      }
+
+      const id = gerarIDMatola();
+      const fotoPadrao = document.getElementById("avatarPreview").src;
+      
+      // Salvar dados no localStorage
+      localStorage.setItem("nome_matola", nome);
+      localStorage.setItem("id_matola", id);
+      localStorage.setItem("foto_matola", fotoPadrao);
+      localStorage.removeItem("anonimo_matola");
+      
+      document.getElementById("resumo_id").textContent = 
+        `✅ Conta offline criada: ${id} ${nome}`;
+      
+      // Redirecionar após 1 segundo
+      setTimeout(() => {
+        if (isWebView() && typeof Android !== 'undefined' && Android.redirectToIndex) {
+          Android.redirectToIndex();
+        } else {
+          window.location.href = "index.html";
+        }
+      }, 1000);
+    }
+
     function continuarSemConta() {
       const id = gerarIDMatola();
       localStorage.setItem("anonimo_matola", "true");
@@ -277,6 +312,12 @@
     if (imgPerfil) {
       document.getElementById("avatarPreview").src = imgPerfil;
     }
+    
+    // Verificar se já tem nome salvo
+    const nomeSalvo = localStorage.getItem("nome_matola");
+    if (nomeSalvo) {
+      document.getElementById("nomeUsuario").value = nomeSalvo;
+    }
   </script>
 </body>
-        </html>
+  </html>
