@@ -85,62 +85,70 @@
     }
 
     function criarConta() {
-      const nome = document.getElementById("nomeUsuario").value.trim();
-      const foto = localStorage.getItem("foto_matola");
-      const button = document.getElementById("criarContaBtn");
-      const originalText = button.textContent;
+  const nome = document.getElementById("nomeUsuario").value.trim();
+  const foto = localStorage.getItem("foto_matola");
+  const button = document.getElementById("criarContaBtn");
+  const originalText = button.textContent;
 
-      if (nome.length < 3) {
-        alert("Digite seu nome completo.");
-        return;
-      }
+  if (nome.length < 3) {
+    alert("Digite seu nome completo.");
+    return;
+  }
 
-      if (!foto) {
-        alert("Você precisa escolher uma imagem de perfil antes.");
-        return;
-      }
+  if (!foto) {
+    alert("Você precisa escolher uma imagem de perfil antes.");
+    return;
+  }
 
-      button.textContent = "Criando...";
-      button.disabled = true;
-      button.classList.add("loading-btn");
+  button.textContent = "Criando...";
+  button.disabled = true;
+  button.classList.add("loading-btn");
 
-      // Comprimir a imagem antes de enviar
-      compressImage(foto).then(compressedFoto => {
-        const id = gerarIDMatola();
-        
-        fetch(`${API_URL}/salvar_perfil`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nome, id, foto: compressedFoto })
-        })
-        .then(res => {
-          if (!res.ok) throw new Error("Erro de conexão com o servidor");
-          return res.json();
-        })
-        .then(data => {
-          if (data.status === "ok") {
-            localStorage.setItem("nome_matola", nome);
-            localStorage.setItem("id_matola", id);
-            localStorage.setItem("foto_matola", compressedFoto);
-            localStorage.removeItem("anonimo_matola");
+  compressImage(foto).then(compressedFoto => {
+    const id = gerarIDMatola();
 
-            document.getElementById("resumo_id").textContent =
-              `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
+    fetch(`${API_URL}/salvar_perfil`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome, id, foto: compressedFoto })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Erro de conexão com o servidor");
+      return res.json();
+    })
+    .then(data => {
+      if (data.status === "ok") {
+        localStorage.setItem("nome_matola", nome);
+        localStorage.setItem("id_matola", id);
+        localStorage.setItem("foto_matola", compressedFoto);
+        localStorage.removeItem("anonimo_matola");
 
-            setTimeout(() => {
-              window.location.href = "index.html";
-            }, 1000);
+        document.getElementById("resumo_id").textContent =
+          `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
+
+        setTimeout(() => {
+          // ✅ Redirecionamento inteligente com fallback para WebView
+          if (isWebView()) {
+            if (typeof Android !== 'undefined' && Android.redirectToIndex) {
+              Android.redirectToIndex(); // <- opcional, se tiver bridge
+            } else {
+              location.replace("index.html"); // <- mais confiável que window.location.href
+            }
           } else {
-            throw new Error(data.message || "Erro ao criar perfil");
+            window.location.href = "index.html";
           }
-        })
-        .catch(err => {
-          alert(err.message || "Erro ao criar perfil");
-          button.textContent = originalText;
-          button.disabled = false;
-          button.classList.remove("loading-btn");
-        });
-      });
+        }, 1000);
+      } else {
+        throw new Error(data.message || "Erro ao criar perfil");
+      }
+    })
+    .catch(err => {
+      alert(err.message || "Erro ao criar perfil");
+      button.textContent = originalText;
+      button.disabled = false;
+      button.classList.remove("loading-btn");
+    });
+  });
     }
 
     // Função para comprimir imagem
