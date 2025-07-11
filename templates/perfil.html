@@ -73,98 +73,97 @@
     </div>
   </div>
 
+  <script>
+    const API_URL = "https://matola-backend.onrender.com";
 
-<script>
-  // IP centralizado — mude aqui quando o IP mudar
-  const API_URL = "http://10.210.44.142:8000";
-
-  function gerarIDMatola() {
-    return "MAT-" + Math.floor(100000 + Math.random() * 899999);
-  }
-
-  function criarConta() {
-    const nome = document.getElementById("nomeUsuario").value.trim();
-    const foto = localStorage.getItem("foto_matola");
-
-    if (nome.length < 3) {
-      alert("Digite seu nome completo.");
-      return;
+    function gerarIDMatola() {
+      return "MAT-" + Math.floor(100000 + Math.random() * 899999);
     }
 
-    if (!foto) {
-      alert("Você precisa escolher uma imagem de perfil antes.");
-      return;
-    }
+    function criarConta() {
+      const nome = document.getElementById("nomeUsuario").value.trim();
+      const foto = localStorage.getItem("foto_matola");
 
-    const id = gerarIDMatola();
-    localStorage.setItem("nome_matola", nome);
-    localStorage.setItem("id_matola", id);
-    localStorage.removeItem("anonimo_matola");
+      if (nome.length < 3) {
+        alert("Digite seu nome completo.");
+        return;
+      }
 
-    document.getElementById("resumo_id").textContent =
-      `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
+      if (!foto) {
+        alert("Você precisa escolher uma imagem de perfil antes.");
+        return;
+      }
 
-    // Enviar para o servidor Flask
-    fetch(`${API_URL}/salvar_perfil`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, id, foto })
-    });
+      const id = gerarIDMatola();
+      localStorage.setItem("nome_matola", nome);
+      localStorage.setItem("id_matola", id);
+      localStorage.removeItem("anonimo_matola");
 
-    setTimeout(() => {
-      window.location.href = "index.html";
-    }, 1000);
-  }
+      document.getElementById("resumo_id").textContent =
+        `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
 
-  function continuarSemConta() {
-    const id = gerarIDMatola();
-    localStorage.setItem("anonimo_matola", "true");
-    localStorage.setItem("id_matola", id);
-    document.getElementById("resumo_id").textContent = `🕶️ ID anônimo criado: ${id}`;
-    setTimeout(() => {
-      window.location.href = "index.html";
-    }, 1000);
-  }
-
-  // Mostrar preview da imagem salva
-  const imgPerfil = localStorage.getItem("foto_matola");
-  if (imgPerfil) {
-    document.getElementById("avatarPreview").src = imgPerfil;
-  }
-
-  // Abrir área de login
-  function abrirLogin() {
-    document.getElementById("loginGrid").style.display = "block";
-  }
-
-  function fazerLogin() {
-    const id = document.getElementById("loginId").value.trim();
-    const nome = document.getElementById("loginNome").value.trim();
-
-    if (id.length < 5 || nome.length < 3) {
-      document.getElementById("loginStatus").textContent = "⚠️ Preencha ID e Nome corretamente.";
-      return;
-    }
-
-    fetch(`${API_URL}/login_perfil?id=${encodeURIComponent(id)}&nome=${encodeURIComponent(nome)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "ok") {
-          localStorage.setItem("nome_matola", data.nome);
-          localStorage.setItem("id_matola", data.id);
-          localStorage.setItem("foto_matola", data.foto);
-          document.getElementById("loginStatus").textContent = "✅ Login confirmado!";
-          setTimeout(() => {
-            window.location.href = "file:///storage/emulated/0/ArmazenarVideos/index.html";
-          }, 1000);
-        } else {
-          document.getElementById("loginStatus").textContent = "❌ ID ou Nome inválido!";
-        }
-      })
-      .catch(() => {
-        document.getElementById("loginStatus").textContent = "⚠️ Erro ao conectar com o servidor.";
+      fetch(`${API_URL}/salvar_perfil`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, id, foto })
       });
-  }
-</script>
+
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 1000);
+    }
+
+    function continuarSemConta() {
+      const id = gerarIDMatola();
+      localStorage.setItem("anonimo_matola", "true");
+      localStorage.setItem("id_matola", id);
+      document.getElementById("resumo_id").textContent = `🕶️ ID anônimo criado: ${id}`;
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 1000);
+    }
+
+    const imgPerfil = localStorage.getItem("foto_matola");
+    if (imgPerfil) {
+      document.getElementById("avatarPreview").src = imgPerfil;
+    }
+
+    function abrirLogin() {
+      document.getElementById("loginGrid").style.display = "block";
+    }
+
+    function fazerLogin() {
+      const id = document.getElementById("loginId").value.trim();
+      const nome = document.getElementById("loginNome").value.trim();
+
+      if (id.length < 5 || nome.length < 3) {
+        document.getElementById("loginStatus").textContent = "⚠️ Preencha ID e Nome corretamente.";
+        return;
+      }
+
+      fetch(`${API_URL}/login_perfil?id=${encodeURIComponent(id)}&nome=${encodeURIComponent(nome)}`)
+        .then(res => {
+          if (!res.ok) throw new Error("Erro de conexão com o servidor");
+          return res.json();
+        })
+        .then(data => {
+          if (data.status === "ok") {
+            localStorage.setItem("nome_matola", data.nome);
+            localStorage.setItem("id_matola", data.id);
+            localStorage.setItem("foto_matola", data.foto);
+            document.getElementById("loginStatus").textContent = "✅ Login confirmado!";
+            setTimeout(() => {
+              window.location.href = "file:///storage/emulated/0/ArmazenarVideos/index.html";
+            }, 1000);
+          } else {
+            document.getElementById("loginStatus").textContent = "❌ ID ou Nome inválido!";
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById("loginStatus").textContent = "⚠️ Erro real ao conectar com o servidor.";
+        });
+    }
+  </script>
 </body>
 </html>
