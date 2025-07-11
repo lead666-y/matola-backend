@@ -47,6 +47,10 @@
       margin-bottom: 10px;
       border: 2px solid #f5c518;
     }
+    .loading-btn {
+      background: #555 !important;
+      cursor: wait;
+    }
   </style>
 </head>
 <body>
@@ -59,7 +63,7 @@
     <input type="text" id="nomeUsuario" placeholder="Digite seu nome completo">
 
     <br>
-    <button onclick="criarConta()">Criar Perfil</button>
+    <button id="criarContaBtn" onclick="criarConta()">Criar Perfil</button>
     <button onclick="continuarSemConta()">Continuar sem perfil</button>
     <button onclick="abrirLogin()">Fazer login</button>
     <p id="resumo_id"></p>
@@ -68,7 +72,7 @@
       <h3>Login com ID e Nome</h3>
       <input type="text" id="loginId" placeholder="Seu ID ex: MAT-123456"><br>
       <input type="text" id="loginNome" placeholder="Seu Nome completo"><br>
-      <button onclick="fazerLogin()">Entrar</button>
+      <button id="loginBtn" onclick="fazerLogin()">Entrar</button>
       <p id="loginStatus"></p>
     </div>
   </div>
@@ -83,6 +87,8 @@
     function criarConta() {
       const nome = document.getElementById("nomeUsuario").value.trim();
       const foto = localStorage.getItem("foto_matola");
+      const button = document.getElementById("criarContaBtn");
+      const originalText = button.textContent;
 
       if (nome.length < 3) {
         alert("Digite seu nome completo.");
@@ -94,23 +100,82 @@
         return;
       }
 
-      const id = gerarIDMatola();
-      localStorage.setItem("nome_matola", nome);
-      localStorage.setItem("id_matola", id);
-      localStorage.removeItem("anonimo_matola");
+      button.textContent = "Criando...";
+      button.disabled = true;
+      button.classList.add("loading-btn");
 
-      document.getElementById("resumo_id").textContent =
-        `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
+      // Comprimir a imagem antes de enviar
+      compressImage(foto).then(compressedFoto => {
+        const id = gerarIDMatola();
+        
+        fetch(`${API_URL}/salvar_perfil`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nome, id, foto: compressedFoto })
+        })
+        .then(res => {
+          if (!res.ok) throw new Error("Erro de conexão com o servidor");
+          return res.json();
+        })
+        .then(data => {
+          if (data.status === "ok") {
+            localStorage.setItem("nome_matola", nome);
+            localStorage.setItem("id_matola", id);
+            localStorage.setItem("foto_matola", compressedFoto);
+            localStorage.removeItem("anonimo_matola");
 
-      fetch(`${API_URL}/salvar_perfil`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, id, foto })
+            document.getElementById("resumo_id").textContent =
+              `✅ Perfil criado: ${id} ${nome}. Agora você pode fazer login no app!`;
+
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 1000);
+          } else {
+            throw new Error(data.message || "Erro ao criar perfil");
+          }
+        })
+        .catch(err => {
+          alert(err.message || "Erro ao criar perfil");
+          button.textContent = originalText;
+          button.disabled = false;
+          button.classList.remove("loading-btn");
+        });
       });
+    }
 
-      setTimeout(() => {
-        window.location.href = "index.html";
-      }, 1000);
+    // Função para comprimir imagem
+    function compressImage(base64) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = base64;
+        
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          const MAX_WIDTH = 200;
+          const MAX_HEIGHT = 200;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+      });
     }
 
     function continuarSemConta() {
@@ -135,35 +200,70 @@
     function fazerLogin() {
       const id = document.getElementById("loginId").value.trim();
       const nome = document.getElementById("loginNome").value.trim();
+      const button = document.getElementById("loginBtn");
+      const statusEl = document.getElementById("loginStatus");
+      const originalText = button.textContent;
 
       if (id.length < 5 || nome.length < 3) {
-        document.getElementById("loginStatus").textContent = "⚠️ Preencha ID e Nome corretamente.";
+        statusEl.textContent = "⚠️ Preencha ID e Nome corretamente.";
+        statusEl.style.color = "red";
         return;
       }
 
-      fetch(`${API_URL}/login_perfil?id=${encodeURIComponent(id)}&nome=${encodeURIComponent(nome)}`)
-        .then(res => {
-          if (!res.ok) throw new Error("Erro de conexão com o servidor");
-          return res.json();
-        })
-        .then(data => {
-          if (data.status === "ok") {
-            localStorage.setItem("nome_matola", data.nome);
-            localStorage.setItem("id_matola", data.id);
-            localStorage.setItem("foto_matola", data.foto);
-            document.getElementById("loginStatus").textContent = "✅ Login confirmado!";
-            setTimeout(() => {
-              window.location.href = "file:///storage/emulated/0/ArmazenarVideos/index.html";
-            }, 1000);
-          } else {
-            document.getElementById("loginStatus").textContent = "❌ ID ou Nome inválido!";
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          document.getElementById("loginStatus").textContent = "⚠️ Erro real ao conectar com o servidor.";
-        });
+      button.textContent = "Entrando...";
+      button.disabled = true;
+      statusEl.textContent = "Conectando...";
+      statusEl.style.color = "#ccc";
+
+      // Usar POST para login
+      fetch(`${API_URL}/login_perfil`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, nome })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("Erro de conexão com o servidor");
+        return res.json();
+      })
+      .then(data => {
+        if (data.status === "ok") {
+          localStorage.setItem("nome_matola", data.nome);
+          localStorage.setItem("id_matola", data.id);
+          localStorage.setItem("foto_matola", data.foto);
+          statusEl.textContent = "✅ Login confirmado!";
+          statusEl.style.color = "green";
+          
+          setTimeout(() => {
+            // Verificar se está em WebView (APK)
+            if (isWebView()) {
+              // Chamar função do Android para redirecionar
+              if (typeof Android !== 'undefined' && Android.redirectToIndex) {
+                Android.redirectToIndex();
+              } else {
+                window.location.href = "index.html";
+              }
+            } else {
+              window.location.href = "index.html";
+            }
+          }, 1000);
+        } else {
+          throw new Error(data.message || "ID ou Nome inválido");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        statusEl.textContent = "⚠️ Erro: " + err.message;
+        statusEl.style.color = "red";
+        button.textContent = originalText;
+        button.disabled = false;
+      });
+    }
+
+    // Verificar se está em WebView
+    function isWebView() {
+      return navigator.userAgent.includes('WebView') || 
+             /(Matola|Android|APK)/i.test(navigator.userAgent);
     }
   </script>
 </body>
-</html>
+  </html>
