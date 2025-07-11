@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_from_directory, render_template_string
+from flask import Flask, request, render_template, send_from_directory, render_template_string, jsonify
 import os, json
 
 app = Flask(__name__)
@@ -21,6 +21,14 @@ if not os.path.exists(PERFIS_JSON_PATH):
 # Função de validação
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Middleware CORS
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    return response
 
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -48,38 +56,57 @@ def salvar_perfil():
     id_ = data.get('id')
     foto = data.get('foto')
 
-    with open(PERFIS_JSON_PATH, 'r') as f:
-        perfis = json.load(f)
+    if not nome or not id_ or not foto:
+        return jsonify({"status": "erro", "message": "Dados incompletos"}), 400
+
+    try:
+        with open(PERFIS_JSON_PATH, 'r') as f:
+            perfis = json.load(f)
+    except:
+        perfis = []
 
     for perfil in perfis:
         if perfil['id'] == id_:
-            return {"status": "duplicado"}
+            return jsonify({"status": "duplicado", "message": "ID já existe"})
 
     perfis.append({"nome": nome, "id": id_, "foto": foto})
 
-    with open(PERFIS_JSON_PATH, 'w') as f:
-        json.dump(perfis, f)
+    try:
+        with open(PERFIS_JSON_PATH, 'w') as f:
+            json.dump(perfis, f)
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"status": "erro", "message": str(e)}), 500
 
-    return {"status": "ok"}
-
-@app.route('/login_perfil')
+@app.route('/login_perfil', methods=['GET', 'POST'])
 def login_perfil():
-    nome = request.args.get('nome')
-    id_ = request.args.get('id')
+    if request.method == 'POST':
+        data = request.json
+        nome = data.get('nome')
+        id_ = data.get('id')
+    else:
+        nome = request.args.get('nome')
+        id_ = request.args.get('id')
+    
+    if not nome or not id_:
+        return jsonify({"status": "erro", "message": "Dados incompletos"}), 400
 
-    with open(PERFIS_JSON_PATH, 'r') as f:
-        perfis = json.load(f)
+    try:
+        with open(PERFIS_JSON_PATH, 'r') as f:
+            perfis = json.load(f)
+    except:
+        perfis = []
 
     for perfil in perfis:
         if perfil['nome'] == nome and perfil['id'] == id_:
-            return {
+            return jsonify({
                 "status": "ok",
                 "nome": perfil['nome'],
                 "id": perfil['id'],
                 "foto": perfil['foto']
-            }
+            })
 
-    return {"status": "erro"}
+    return jsonify({"status": "erro", "message": "Perfil não encontrado"})
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
