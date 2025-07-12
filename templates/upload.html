@@ -2,112 +2,101 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Upload Matola</title>
+  <title>Selecionar Imagem de Perfil</title>
   <style>
-    body {
-      background: #111;
-      color: #f5c518;
-      font-family: sans-serif;
-      padding: 20px;
-    }
-    h2 { margin-top: 30px; }
-    input, button {
-      padding: 8px;
-      margin: 5px 0;
-      border-radius: 10px;
-      border: none;
-      outline: none;
-    }
-    input[type="text"], input[type="file"] {
-      width: 100%;
-    }
-    button {
-      background: #f5c518;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .bloco {
-      background: #1a1a1a;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-    }
-    #erro { color: red; }
+    body { font-family: sans-serif; padding: 20px; background: #111; color: #f5c518; text-align: center; }
+    input, button { font-size: 16px; margin-top: 10px; padding: 8px 12px; border-radius: 5px; border: none; }
+    #preview { margin-top: 20px; max-width: 200px; border-radius: 100px; display: none; }
   </style>
 </head>
 <body>
 
-  <!-- BLOCO 1: FOTO DE PERFIL -->
-  <div class="bloco">
-    <h2>📷 Escolher Imagem de Perfil</h2>
-    <input type="file" accept="image/*" onchange="salvarFotoPerfil(this)">
-    <p>Essa será sua foto de canal na plataforma.</p>
-  </div>
-
-  <!-- BLOCO 2: POSTAGEM DE VÍDEO -->
-  <div class="bloco">
-    <h2>🎥 Postar um Vídeo</h2>
-    <input id="id_nome" type="text" placeholder="Seu ID + nome (obrigatório)">
-    <input id="titulo" type="text" placeholder="Título do vídeo">
-    <input id="descricao" type="text" placeholder="Descrição do vídeo">
-    <input id="arquivo" type="file" accept="video/*">
-    <button onclick="postarVideo()">📤 Enviar vídeo</button>
-    <p id="erro"></p>
-  </div>
+  <h2>🖼️ Escolha sua foto de perfil</h2>
+  <input type="file" id="media" accept="image/png, image/jpeg" required>
+  <br>
+  <img id="preview" src="">
+  <br>
+  <button id="confirmar" style="display:none;">Usar esta imagem</button>
 
   <script>
-    function salvarFotoPerfil(input) {
+    const input = document.getElementById('media');
+    const preview = document.getElementById('preview');
+    const confirmar = document.getElementById('confirmar');
+
+    input.addEventListener('change', () => {
       const file = input.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function () {
-        localStorage.setItem("foto_matola", reader.result);
-        alert("✅ Foto de perfil atualizada!");
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function postarVideo() {
-      const idNome = document.getElementById('id_nome').value.trim();
-      const titulo = document.getElementById('titulo').value.trim();
-      const descricao = document.getElementById('descricao').value.trim();
-      const file = document.getElementById('arquivo').files[0];
-
-      if (!idNome || !titulo || !descricao || !file) {
-        document.getElementById('erro').textContent = "⚠️ Preencha todos os campos corretamente.";
-        return;
-      }
-
-      // Verificar se id + nome existe no localStorage
-      const idSaved = localStorage.getItem("id_matola");
-      const nomeSaved = localStorage.getItem("nome_matola");
-      const esperado = idSaved + " " + nomeSaved;
-
-      if (idNome !== esperado) {
-        document.getElementById('erro').textContent = "❌ ID + nome inválidos. Verifique seu login.";
+      if (!file || !file.type.startsWith('image/')) {
+        alert('Por favor selecione uma imagem válida.');
         return;
       }
 
       const reader = new FileReader();
-      reader.onload = function () {
-        let videos = JSON.parse(localStorage.getItem("videos_publicados")) || [];
-        videos.push({
-          id: idSaved,
-          nome: nomeSaved,
-          titulo,
-          descricao,
-          data: new Date().toLocaleString(),
-          arquivoBase64: reader.result
-        });
-        localStorage.setItem("videos_publicados", JSON.stringify(videos));
-        alert("✅ Vídeo postado com sucesso!");
-        window.location.href = "index.html";
+      reader.onload = function (e) {
+        const base64 = e.target.result;
+        preview.src = base64;
+        preview.style.display = "block";
+        confirmar.style.display = "inline-block";
+
+        confirmar.onclick = () => {
+          localStorage.setItem("foto_matola", base64);
+          window.location.href = "https://matola-backend.onrender.com/perfil.html"; // volta pro APK ou webview
+        };
       };
+
       reader.readAsDataURL(file);
-    }
+    });
   </script>
+
+<hr style="margin-top: 40px; border-color: #444;">
+<h2 style="margin-top: 30px;">📤 Postar um vídeo ou imagem</h2>
+
+<input type="text" id="post-id" placeholder="Seu ID (obrigatório)">
+<input type="text" id="post-nome" placeholder="Seu nome (ou anônimo)">
+<input type="text" id="post-titulo" placeholder="Título do post" required>
+<br>
+<input type="file" id="post-arquivo" accept="image/*,video/*">
+<br>
+<button onclick="postarMidia()">Postar agora</button>
+<p id="post-erro" style="color: red; margin-top: 10px;"></p>
+
+<script>
+  function postarMidia() {
+    const id = document.getElementById('post-id').value.trim();
+    const nome = document.getElementById('post-nome').value.trim() || "anônimo";
+    const titulo = document.getElementById('post-titulo').value.trim();
+    const file = document.getElementById('post-arquivo').files[0];
+    const erro = document.getElementById('post-erro');
+
+    if (!id || !titulo || !file) {
+      erro.textContent = "⚠️ Preencha todos os campos obrigatórios.";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const base64 = e.target.result;
+
+      const post = {
+        id,
+        nome,
+        titulo,
+        tipo: file.type.startsWith('image/') ? "imagem" : "video",
+        conteudo: base64,
+        data: new Date().toLocaleString()
+      };
+
+      let posts = JSON.parse(localStorage.getItem("posts_matola") || "[]");
+      posts.push(post);
+      localStorage.setItem("posts_matola", JSON.stringify(posts));
+
+      alert("✅ Post publicado com sucesso!");
+      window.location.href = "https://matola-backend.onrender.com/index.html";
+    };
+
+    reader.readAsDataURL(file);
+  }
+</script>
 
 </body>
 </html>
+
