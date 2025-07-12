@@ -5,22 +5,20 @@
   <title>Upload Matola</title>
   <style>
     body {
-      font-family: sans-serif;
       background: #111;
       color: #f5c518;
+      font-family: sans-serif;
       padding: 20px;
     }
-    h2 {
-      color: #f5c518;
-    }
+    h2 { margin-top: 30px; }
     input, button {
       padding: 8px;
-      margin: 6px 0;
+      margin: 5px 0;
       border-radius: 10px;
       border: none;
       outline: none;
     }
-    input[type="text"] {
+    input[type="text"], input[type="file"] {
       width: 100%;
     }
     button {
@@ -29,99 +27,87 @@
       font-weight: bold;
       cursor: pointer;
     }
-    #erroPublicacao {
-      color: red;
-      margin-top: 10px;
-    }
     .bloco {
       background: #1a1a1a;
-      padding: 20px;
-      border-radius: 12px;
+      padding: 15px;
+      border-radius: 10px;
       margin-bottom: 20px;
     }
+    #erro { color: red; }
   </style>
 </head>
-<body onload="initUploadPage()">
+<body>
 
-  <!-- BLOCO 1: Foto de Perfil -->
-  <div id="perfilUploader" class="bloco" style="display: none;">
+  <!-- BLOCO 1: FOTO DE PERFIL -->
+  <div class="bloco">
     <h2>📷 Escolher Imagem de Perfil</h2>
     <input type="file" accept="image/*" onchange="salvarFotoPerfil(this)">
-    <p>Esta imagem será usada como seu avatar na plataforma.</p>
+    <p>Essa será sua foto de canal na plataforma.</p>
   </div>
 
-  <!-- BLOCO 2: Publicar Vídeo -->
-  <div id="publicadorVideos" class="bloco" style="display: none;">
-    <h2>🎥 Publicar Vídeo na Plataforma</h2>
-    <input id="tituloVideo" type="text" placeholder="Título do vídeo"><br>
-    <input id="descricaoVideo" type="text" placeholder="Descrição do vídeo"><br>
-    <input id="arquivoVideo" type="file" accept="video/*"><br>
-    <button onclick="postarVideo()">📤 Enviar Vídeo</button>
-    <p id="erroPublicacao"></p>
+  <!-- BLOCO 2: POSTAGEM DE VÍDEO -->
+  <div class="bloco">
+    <h2>🎥 Postar um Vídeo</h2>
+    <input id="id_nome" type="text" placeholder="Seu ID + nome (obrigatório)">
+    <input id="titulo" type="text" placeholder="Título do vídeo">
+    <input id="descricao" type="text" placeholder="Descrição do vídeo">
+    <input id="arquivo" type="file" accept="video/*">
+    <button onclick="postarVideo()">📤 Enviar vídeo</button>
+    <p id="erro"></p>
   </div>
 
   <script>
-    function initUploadPage() {
-      const foto = localStorage.getItem('foto_matola');
-      const id = localStorage.getItem('id_matola');
-      const nome = localStorage.getItem('nome_matola');
-
-      if (!foto) {
-        document.getElementById('perfilUploader').style.display = 'block';
-      }
-
-      if (id && nome) {
-        document.getElementById('publicadorVideos').style.display = 'block';
-      } else {
-        document.getElementById('erroPublicacao').textContent = "❌ Não é possível postar um vídeo agora. Crie uma conta normal ou anônima e volte a tentar de novo.";
-      }
-    }
-
     function salvarFotoPerfil(input) {
       const file = input.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function () {
-        localStorage.setItem('foto_matola', reader.result);
-        alert('✅ Foto de perfil salva com sucesso!');
-        location.reload(); // Atualiza a página após salvar a foto
+        localStorage.setItem("foto_matola", reader.result);
+        alert("✅ Foto de perfil atualizada!");
       };
       reader.readAsDataURL(file);
     }
 
     function postarVideo() {
-      const id = localStorage.getItem('id_matola');
-      const nome = localStorage.getItem('nome_matola');
-      const titulo = document.getElementById('tituloVideo').value.trim();
-      const descricao = document.getElementById('descricaoVideo').value.trim();
-      const arquivo = document.getElementById('arquivoVideo').files[0];
+      const idNome = document.getElementById('id_nome').value.trim();
+      const titulo = document.getElementById('titulo').value.trim();
+      const descricao = document.getElementById('descricao').value.trim();
+      const file = document.getElementById('arquivo').files[0];
 
-      if (!id || !nome || !titulo || !descricao || !arquivo) {
-        document.getElementById('erroPublicacao').textContent = "⚠️ Preencha todos os campos corretamente.";
+      if (!idNome || !titulo || !descricao || !file) {
+        document.getElementById('erro').textContent = "⚠️ Preencha todos os campos corretamente.";
+        return;
+      }
+
+      // Verificar se id + nome existe no localStorage
+      const idSaved = localStorage.getItem("id_matola");
+      const nomeSaved = localStorage.getItem("nome_matola");
+      const esperado = idSaved + " " + nomeSaved;
+
+      if (idNome !== esperado) {
+        document.getElementById('erro').textContent = "❌ ID + nome inválidos. Verifique seu login.";
         return;
       }
 
       const reader = new FileReader();
       reader.onload = function () {
-        let videos = JSON.parse(localStorage.getItem('videos_publicados')) || [];
+        let videos = JSON.parse(localStorage.getItem("videos_publicados")) || [];
         videos.push({
-          id,
-          nome,
+          id: idSaved,
+          nome: nomeSaved,
           titulo,
           descricao,
           data: new Date().toLocaleString(),
           arquivoBase64: reader.result
         });
-        localStorage.setItem('videos_publicados', JSON.stringify(videos));
-        alert("✅ Vídeo publicado com sucesso!");
-        // Limpar campos após postagem
-        document.getElementById('tituloVideo').value = "";
-        document.getElementById('descricaoVideo').value = "";
-        document.getElementById('arquivoVideo').value = "";
+        localStorage.setItem("videos_publicados", JSON.stringify(videos));
+        alert("✅ Vídeo postado com sucesso!");
+        window.location.href = "index.html";
       };
-      reader.readAsDataURL(arquivo);
+      reader.readAsDataURL(file);
     }
   </script>
+
 </body>
-  </html>
+</html>
