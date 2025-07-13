@@ -1100,6 +1100,96 @@ document.getElementById('videoFile').addEventListener('change', function () {
 });
 </script>
 
+<script>
+// Inicializa o IndexedDB
+let db2;
+(function initIndexedDBForUploads() {
+  const request = indexedDB.open('MatolaUserUploadsDB', 1);
+  request.onupgradeneeded = function (event) {
+    db2 = event.target.result;
+    if (!db2.objectStoreNames.contains('user_uploads')) {
+      db2.createObjectStore('user_uploads', { keyPath: 'id', autoIncrement: true });
+    }
+  };
+  request.onsuccess = function (event) {
+    db2 = event.target.result;
+    carregarVideos2(); // carrega ao abrir
+  };
+  request.onerror = function () {
+    console.error('Erro ao abrir o banco IndexedDB para uploads do usuário.');
+  };
+})();
+
+// Função para carregar vídeos e imagens postados por usuários (IndexedDB)
+function carregarVideos2() {
+  if (!db2) return console.warn("IndexedDB não inicializado.");
+  
+  const tx = db2.transaction('user_uploads', 'readonly');
+  const store = tx.objectStore('user_uploads');
+  const request = store.getAll();
+
+  request.onsuccess = function () {
+    const uploads = request.result || [];
+    const grid = document.getElementById("videoGrid");
+
+    uploads.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "video-card";
+      card.id = item.id;
+
+      const blobURL = URL.createObjectURL(item.blob);
+      const isImage = item.tipo.startsWith("image/");
+      const avatar = localStorage.getItem("foto_matola") || "img/avatar_padrao.png";
+      const titulo = item.titulo || "Sem título";
+      const descricao = item.descricao || "";
+      const dataPub = item.dataPublicacao || new Date().toLocaleDateString();
+
+      if (isImage) {
+        card.innerHTML = `
+          <div class="video-wrapper">
+            <div class="view-counter">0 visualizações</div>
+            <div class="likes-counter">0 likes</div>
+            <img src="${blobURL}" style="width:100%; max-height: 80vh; object-fit: contain; border-radius:10px;">
+            <div class="like-overlay">
+              <img src="file:///storage/emulated/0/ArmazenarVideos/like.jpg" class="like-icon">
+            </div>
+          </div>
+          <div class="canal-info" style="margin-top:10px;">
+            <img src="${avatar}" class="canal-foto">
+            <div>
+              <h3 style="margin:5px 0;">${titulo}</h3>
+              <small>${descricao}</small><br>
+              <small style="color:#aaa;">Publicado em: ${dataPub}</small>
+            </div>
+          </div>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="video-wrapper">
+            <div class="view-counter">0 visualizações</div>
+            <div class="likes-counter">0 likes</div>
+            <video src="${blobURL}" controls style="width:100%; max-height: 80vh; border-radius:10px;" preload="metadata"></video>
+            <div class="like-overlay">
+              <img src="file:///storage/emulated/0/ArmazenarVideos/like.jpg" class="like-icon">
+            </div>
+          </div>
+          <div class="canal-info" style="margin-top:10px;">
+            <img src="${avatar}" class="canal-foto">
+            <div>
+              <h3 style="margin:5px 0;">${titulo}</h3>
+              <small>${descricao}</small><br>
+              <small style="color:#aaa;">Publicado em: ${dataPub}</small>
+            </div>
+          </div>
+        `;
+      }
+
+      // Adiciona no topo da grid
+      grid.insertBefore(card, grid.firstChild);
+    });
+  };
+}
+</script>
 
 <script>
 // Configuração
