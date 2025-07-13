@@ -124,5 +124,10 @@ def perfil_html():
 def index_html():
     return render_template('index.html')
 
+
+@app.route('/publicar.html')
+def publicar():
+    return render_template('publicar.html')
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
