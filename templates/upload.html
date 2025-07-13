@@ -186,7 +186,7 @@
       const tx = dbUpload.transaction("user_uploads", "readwrite");
       tx.objectStore("user_uploads").add(data).onsuccess = () => {
         alert("Post publicado com sucesso!");
-        window.location.href = "index.html";
+        window.location.href = "https://matola-backend.onrender.com/index.html";
       };
     };
   </script>
