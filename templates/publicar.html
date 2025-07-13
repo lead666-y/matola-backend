@@ -85,6 +85,93 @@
         .then(res => res.json())
         .then(data => {
           if (data.status === "ok") {
+            // Salvar mí<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Confirmar Publicação</title>
+  <style>
+    body {
+      background: #111;
+      color: #f5c518;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    input, button {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+    #previewImage, #previewVideo {
+      max-width: 90%;
+      margin: 20px 0;
+      border-radius: 10px;
+      display: none;
+    }
+    button {
+      background-color: #f5c518;
+      color: #000;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📤 Publicar Mídia</h2>
+
+  <div id="previewContainer">
+    <img id="previewImage" />
+    <video id="previewVideo" controls></video>
+  </div>
+
+  <input type="text" id="titulo" placeholder="Título da mídia">
+  <input type="text" id="id" placeholder="Seu ID (ex: MAT-123456)">
+  <input type="text" id="nome" placeholder="Seu Nome completo">
+
+  <button onclick="confirmarPublicacao()">✅ Confirmar e Publicar</button>
+  <p id="status"></p>
+
+  <script>
+    const API = "https://matola-backend.onrender.com";
+    const base64 = localStorage.getItem("midia_matola");
+
+    const isImage = base64.startsWith("data:image");
+    const previewImage = document.getElementById("previewImage");
+    const previewVideo = document.getElementById("previewVideo");
+
+    if (isImage) {
+      previewImage.src = base64;
+      previewImage.style.display = "block";
+    } else {
+      previewVideo.src = base64;
+      previewVideo.style.display = "block";
+    }
+
+    function confirmarPublicacao() {
+      const titulo = document.getElementById("titulo").value.trim();
+      const id = document.getElementById("id").value.trim();
+      const nome = document.getElementById("nome").value.trim();
+      const status = document.getElementById("status");
+
+      if (!titulo || !id || !nome) {
+        status.textContent = "⚠️ Preencha todos os campos.";
+        return;
+      }
+
+      // Validação com servidor
+      fetch(`${API}/login_perfil?id=${encodeURIComponent(id)}&nome=${encodeURIComponent(nome)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "ok") {
             // Salvar mídia no localStorage para ser carregada no index.html
             const publicacoes = JSON.parse(localStorage.getItem("publicacoes_matola") || "[]");
 
