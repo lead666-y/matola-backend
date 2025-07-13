@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Confirmar Publicação</title>
+  <title>Publicar Conteúdo</title>
   <style>
     body {
       background: #111;
@@ -11,94 +11,99 @@
       text-align: center;
       padding: 20px;
     }
+    .card {
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 400px;
+      margin: auto;
+    }
     input, button {
-      width: 90%;
       padding: 10px;
       margin: 10px 0;
+      width: 90%;
       border-radius: 5px;
       border: none;
-      font-size: 16px;
-    }
-    #previewImage, #previewVideo {
-      max-width: 90%;
-      margin: 20px 0;
-      border-radius: 10px;
-      display: none;
     }
     button {
-      background-color: #f5c518;
-      color: #000;
+      background: #f5c518;
+      color: black;
+      font-weight: bold;
       cursor: pointer;
     }
-    #status {
-      margin-top: 15px;
-      font-size: 14px;
-      color: #ccc;
+    #preview {
+      margin: 20px 0;
+      max-width: 100%;
+      border-radius: 10px;
     }
   </style>
 </head>
 <body>
 
-  <h2>📤 Publicar Mídia</h2>
+<div class="card">
+  <h2>📤 Publicar Conteúdo</h2>
 
   <div id="previewContainer">
-    <img id="previewImage" />
-    <video id="previewVideo" controls></video>
+    <img id="previewImagem" style="display:none;" />
+    <video id="previewVideo" controls style="display:none;"></video>
   </div>
 
-  <input type="text" id="titulo" placeholder="Título da mídia">
-  <input type="text" id="id" placeholder="Seu ID (ex: MAT-123456)">
-  <input type="text" id="nome" placeholder="Seu Nome completo">
+  <input type="text" id="titulo" placeholder="Título do conteúdo">
 
-  <button onclick="confirmarPublicacao()">✅ Confirmar e Publicar</button>
-  <p id="status"></p>
+  <p id="dadosUsuario" style="font-size: 14px;"></p>
 
-  <script>
-    const base64 = localStorage.getItem("midia_matola");
+  <button onclick="publicar()">Publicar</button>
+</div>
 
-    const isImage = base64 && base64.startsWith("data:image");
-    const previewImage = document.getElementById("previewImage");
-    const previewVideo = document.getElementById("previewVideo");
+<script>
+  const tipo = localStorage.getItem("tipo_postagem_matola");
+  const midia = localStorage.getItem("midia_postagem_matola");
+  const nome = localStorage.getItem("nome_matola") || "Anônimo";
+  const id = localStorage.getItem("id_matola") || "MAT-000000";
+  const foto = localStorage.getItem("foto_matola") || "img/avatar_padrao.png";
 
-    if (isImage) {
-      previewImage.src = base64;
-      previewImage.style.display = "block";
-    } else {
-      previewVideo.src = base64;
-      previewVideo.style.display = "block";
+  document.getElementById("dadosUsuario").textContent = `👤 ${id} - ${nome}`;
+
+  const img = document.getElementById("previewImagem");
+  const vid = document.getElementById("previewVideo");
+
+  if (tipo === "video") {
+    vid.src = midia;
+    vid.style.display = "block";
+  } else {
+    img.src = midia;
+    img.style.display = "block";
+  }
+
+  function publicar() {
+    const titulo = document.getElementById("titulo").value.trim();
+    if (titulo.length < 2) {
+      alert("Dê um título ao seu conteúdo.");
+      return;
     }
 
-    function confirmarPublicacao() {
-      const titulo = document.getElementById("titulo").value.trim();
-      const id = document.getElementById("id").value.trim();
-      const nome = document.getElementById("nome").value.trim();
-      const status = document.getElementById("status");
+    const publicacoes = JSON.parse(localStorage.getItem("publicacoes_matola") || "[]");
 
-      if (!titulo || !id || !nome) {
-        status.textContent = "⚠️ Preencha todos os campos.";
-        return;
-      }
+    publicacoes.push({
+      tipo,
+      midia,
+      titulo,
+      id,
+      nome,
+      foto,
+      data: new Date().toLocaleDateString()
+    });
 
-      const publicacoes = JSON.parse(localStorage.getItem("publicacoes_matola") || "[]");
+    localStorage.setItem("publicacoes_matola", JSON.stringify(publicacoes));
 
-      const nova = {
-        id: "pub_" + Date.now(),
-        titulo,
-        base64,
-        tipo: isImage ? "imagem" : "video",
-        autor: nome,
-        autor_id: id,
-        data: new Date().toLocaleDateString("pt-PT")
-      };
+    // Limpa o buffer de postagem
+    localStorage.removeItem("midia_postagem_matola");
+    localStorage.removeItem("tipo_postagem_matola");
 
-      publicacoes.push(nova);
-      localStorage.setItem("publicacoes_matola", JSON.stringify(publicacoes));
-      localStorage.removeItem("midia_matola");
-
-      status.textContent = "✅ Publicado com sucesso!";
-      setTimeout(() => window.location.href = "https://matola-backend.onrender.com/index.html", 1000);
-    }
-  </script>
+    // Vai para index
+    window.location.href = "https://matola-backend.onrender.com/index.html";
+  }
+</script>
 
 </body>
 </html>
