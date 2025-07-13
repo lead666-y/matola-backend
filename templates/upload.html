@@ -2,16 +2,15 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Selecionar Mídia</title>
+  <title>Selecionar Imagem de Perfil</title>
   <style>
     body { font-family: sans-serif; padding: 20px; background: #111; color: #f5c518; text-align: center; }
     input, button { font-size: 16px; margin-top: 10px; padding: 8px 12px; border-radius: 5px; border: none; }
-    #preview, #previewMidia { margin-top: 20px; max-width: 200px; border-radius: 10px; display: none; }
+    #preview { margin-top: 20px; max-width: 200px; border-radius: 100px; display: none; }
   </style>
 </head>
 <body>
 
-  <!-- Script 1: Escolher imagem de perfil -->
   <h2>🖼️ Escolha sua foto de perfil</h2>
   <input type="file" id="media" accept="image/png, image/jpeg" required>
   <br>
@@ -19,75 +18,7 @@
   <br>
   <button id="confirmar" style="display:none;">Usar esta imagem</button>
 
-  <hr style="margin: 40px 0; border-color: #333;">
-
-<h2>📤 Postar Imagem ou Vídeo</h2>
-<input type="file" id="mediaPost" accept="image/*,video/*" required>
-<br>
-<img id="previewMidia" src="" style="display:none;">
-<video id="previewVideo" controls style="display:none; max-width: 200px; border-radius: 10px; margin-top: 20px;"></video>
-<br>
-<button id="confirmarPost" style="display:none;">Postar Mídia</button>
-<p id="mensagemErro" style="color: red; font-size: 14px;"></p>
-
-<script>
-  const inputPost = document.getElementById('mediaPost');
-  const previewMidia = document.getElementById('previewMidia');
-  const previewVideo = document.getElementById('previewVideo');
-  const confirmarPost = document.getElementById('confirmarPost');
-  const mensagemErro = document.getElementById('mensagemErro');
-
-  inputPost.addEventListener('change', () => {
-    const file = inputPost.files[0];
-
-    if (!file) {
-      mensagemErro.textContent = "⚠️ Nenhum arquivo selecionado.";
-      return;
-    }
-
-    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-      mensagemErro.textContent = "⚠️ Arquivo inválido. Selecione uma imagem ou vídeo.";
-      return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = function (e) {
-      const base64 = e.target.result;
-
-      if (file.type.startsWith('image/')) {
-        previewMidia.src = base64;
-        previewMidia.style.display = "block";
-        previewVideo.style.display = "none";
-      } else {
-        previewVideo.src = base64;
-        previewVideo.style.display = "block";
-        previewMidia.style.display = "none";
-      }
-
-      confirmarPost.style.display = "inline-block";
-      mensagemErro.textContent = "";
-
-      confirmarPost.onclick = () => {
-        try {
-          localStorage.setItem("midia_matola", base64);
-          window.location.href = "https://matola-backend.onrender.com/publicar.html"; // Altere aqui se preferir usar outro domínio
-        } catch (erro) {
-          mensagemErro.textContent = "❌ Erro ao salvar mídia. Pode ser muito grande.";
-        }
-      };
-    };
-
-    reader.onerror = function () {
-      mensagemErro.textContent = "❌ Erro ao ler o arquivo.";
-    };
-
-    reader.readAsDataURL(file);
-  });
-</script>
-
   <script>
-    // Script de imagem de perfil
     const input = document.getElementById('media');
     const preview = document.getElementById('preview');
     const confirmar = document.getElementById('confirmar');
@@ -108,44 +39,7 @@
 
         confirmar.onclick = () => {
           localStorage.setItem("foto_matola", base64);
-          window.location.href = "https://matola-backend.onrender.com/perfil.html";
-        };
-      };
-
-      reader.readAsDataURL(file);
-    });
-
-    // Script de postagem de imagem ou vídeo
-    const inputPost = document.getElementById('mediaPost');
-    const previewMidia = document.getElementById('previewMidia');
-    const previewVideo = document.getElementById('previewVideo');
-    const confirmarPost = document.getElementById('confirmarPost');
-
-    inputPost.addEventListener('change', () => {
-      const file = inputPost.files[0];
-      if (!file || (!file.type.startsWith('image/') && !file.type.startsWith('video/'))) {
-        alert('Por favor selecione uma imagem ou vídeo válido.');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const base64 = e.target.result;
-
-        if (file.type.startsWith('image/')) {
-          previewMidia.src = base64;
-          previewMidia.style.display = "block";
-          previewVideo.style.display = "none";
-        } else if (file.type.startsWith('video/')) {
-          previewVideo.src = base64;
-          previewVideo.style.display = "block";
-          previewMidia.style.display = "none";
-        }
-
-        confirmarPost.style.display = "inline-block";
-        confirmarPost.onclick = () => {
-          localStorage.setItem("midia_matola", base64);
-          window.location.href = "https://matola-backend.onrender.com/publicar.html"; // ou outra página de destino
+          window.location.href = "https://matola-backend.onrender.com/perfil.html"; // volta pro APK ou webview
         };
       };
 
@@ -153,5 +47,58 @@
     });
   </script>
 
+<hr style="margin: 30px 0; border: 1px solid #444;">
+
+<h2>🎬 Seleccionar imagem ou vídeo para publicar</h2>
+<input type="file" id="midiaPostagem" accept="image/*,video/*">
+<br>
+<video id="previewVideo" controls style="display:none; margin-top: 20px; max-width: 300px; border-radius: 10px;"></video>
+<img id="previewImagemPost" style="display:none; margin-top: 20px; max-width: 300px; border-radius: 10px;">
+<br>
+<button id="confirmarPostagem" style="display:none;">Usar esta mídia para publicar</button>
+
+<script>
+  const midiaPostagem = document.getElementById("midiaPostagem");
+  const previewVideo = document.getElementById("previewVideo");
+  const previewImagemPost = document.getElementById("previewImagemPost");
+  const confirmarPostagem = document.getElementById("confirmarPostagem");
+
+  midiaPostagem.addEventListener("change", () => {
+    const file = midiaPostagem.files[0];
+    if (!file) return;
+
+    // Esconder os dois previews primeiro
+    previewVideo.style.display = "none";
+    previewImagemPost.style.display = "none";
+    confirmarPostagem.style.display = "none";
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      const base64 = e.target.result;
+      localStorage.setItem("midia_postagem_matola", base64);
+
+      if (file.type.startsWith("video")) {
+        previewVideo.src = base64;
+        previewVideo.style.display = "block";
+      } else {
+        previewImagemPost.src = base64;
+        previewImagemPost.style.display = "block";
+      }
+
+      confirmarPostagem.style.display = "inline-block";
+
+      confirmarPostagem.onclick = () => {
+        // Você pode salvar também o tipo para uso posterior
+        localStorage.setItem("tipo_postagem_matola", file.type.startsWith("video") ? "video" : "imagem");
+        window.location.href = "https://matola-backend.onrender.com/publicar.html";
+      };
+    };
+
+    reader.readAsDataURL(file);
+  });
+</script>
+  
 </body>
 </html>
+
