@@ -606,6 +606,52 @@ video::before {
     <ul id="progress-list"></ul>
 </div>
 
+    <script>
+function carregarPublicacoesUsuario() {
+  const publicacoes = JSON.parse(localStorage.getItem("publicacoes_matola") || "[]");
+  const grid = document.getElementById("videoGrid");
+
+  publicacoes.forEach((pub, index) => {
+    const idUnico = `pub_${index}`;
+
+    const card = document.createElement("div");
+    card.className = "video-card";
+    card.id = idUnico;
+
+    // Conteúdo da mídia
+    let midiaHTML = "";
+    if (pub.tipo === "video") {
+      midiaHTML = `
+        <video controls style="width:100%; height: 80vh; object-fit: cover; border-radius: 10px;" src="${pub.midia}"></video>
+      `;
+    } else {
+      midiaHTML = `
+        <img src="${pub.midia}" style="width:100%; height: 80vh; object-fit: contain; border-radius: 10px; background: #000;">
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="video-wrapper">
+        ${midiaHTML}
+        <div class="view-counter">0 visualizações</div>
+        <div class="likes-counter">0 likes</div>
+      </div>
+
+      <div class="canal-info" style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+        <img src="${pub.foto}" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #f5c518; object-fit: cover;">
+        <div>
+          <strong style="color: #f5c518;">${pub.titulo}</strong><br>
+          <small style="color: #ccc;">${pub.nome} (${pub.id})</small>
+        </div>
+      </div>
+    `;
+
+    grid.prepend(card); // Adiciona no topo
+  });
+}
+
+document.addEventListener("DOMContentLoaded", carregarPublicacoesUsuario);
+</script>
 
 <script>
     // ===== FUNÇÃO DE LOGOUT =====
