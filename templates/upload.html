@@ -21,14 +21,70 @@
 
   <hr style="margin: 40px 0; border-color: #333;">
 
-  <!-- Script 2: Postar imagem ou vídeo -->
-  <h2>📤 Postar Imagem ou Vídeo</h2>
-  <input type="file" id="mediaPost" accept="image/*,video/*" required>
-  <br>
-  <img id="previewMidia" src="" style="display:none;">
-  <video id="previewVideo" controls style="display:none; max-width: 200px; border-radius: 10px; margin-top: 20px;"></video>
-  <br>
-  <button id="confirmarPost" style="display:none;">Postar Mídia</button>
+<h2>📤 Postar Imagem ou Vídeo</h2>
+<input type="file" id="mediaPost" accept="image/*,video/*" required>
+<br>
+<img id="previewMidia" src="" style="display:none;">
+<video id="previewVideo" controls style="display:none; max-width: 200px; border-radius: 10px; margin-top: 20px;"></video>
+<br>
+<button id="confirmarPost" style="display:none;">Postar Mídia</button>
+<p id="mensagemErro" style="color: red; font-size: 14px;"></p>
+
+<script>
+  const inputPost = document.getElementById('mediaPost');
+  const previewMidia = document.getElementById('previewMidia');
+  const previewVideo = document.getElementById('previewVideo');
+  const confirmarPost = document.getElementById('confirmarPost');
+  const mensagemErro = document.getElementById('mensagemErro');
+
+  inputPost.addEventListener('change', () => {
+    const file = inputPost.files[0];
+
+    if (!file) {
+      mensagemErro.textContent = "⚠️ Nenhum arquivo selecionado.";
+      return;
+    }
+
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      mensagemErro.textContent = "⚠️ Arquivo inválido. Selecione uma imagem ou vídeo.";
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      const base64 = e.target.result;
+
+      if (file.type.startsWith('image/')) {
+        previewMidia.src = base64;
+        previewMidia.style.display = "block";
+        previewVideo.style.display = "none";
+      } else {
+        previewVideo.src = base64;
+        previewVideo.style.display = "block";
+        previewMidia.style.display = "none";
+      }
+
+      confirmarPost.style.display = "inline-block";
+      mensagemErro.textContent = "";
+
+      confirmarPost.onclick = () => {
+        try {
+          localStorage.setItem("midia_matola", base64);
+          window.location.href = "https://matola-backend.onrender.com/publicar.html"; // Altere aqui se preferir usar outro domínio
+        } catch (erro) {
+          mensagemErro.textContent = "❌ Erro ao salvar mídia. Pode ser muito grande.";
+        }
+      };
+    };
+
+    reader.onerror = function () {
+      mensagemErro.textContent = "❌ Erro ao ler o arquivo.";
+    };
+
+    reader.readAsDataURL(file);
+  });
+</script>
 
   <script>
     // Script de imagem de perfil
